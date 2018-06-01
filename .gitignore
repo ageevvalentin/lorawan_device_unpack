@@ -1,0 +1,11 @@
+### common project directories
+/.idea/
+/target/
+/logs/
+/project/target/
+
+### Scala/Java Output files
+*.class
+*.log
+
+
