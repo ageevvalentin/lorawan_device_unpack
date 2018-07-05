@@ -1,9 +1,9 @@
 package io.tracknet.healthy.TBHV100
 
+import com.typesafe.scalalogging.StrictLogging
 import spray.json._
 
-
-class Decoder extends org.loraalliance.Decoder {
+class Decoder extends org.loraalliance.Decoder with StrictLogging {
 
   def statusLabelled(status: Boolean): String =
     if (status) {
@@ -15,28 +15,43 @@ class Decoder extends org.loraalliance.Decoder {
   override def execute(tabsPayload: String, format: PayloadFormat = PayloadFormat.HEX): JsObject = {
     // https://github.com/IPSO-Alliance/pub/tree/master/reg%20v1_1
 
+    val payload = if (format == PayloadFormat.BASE64) {
+      atoh(tabsPayload)
+    } else {
+      tabsPayload
+    }
+
+    logger.debug(payload)
+
+    /* Decoding below assumes that we have a hexstring in the payload */
+
     //Primary Measurements
-    val status: Int = Hex2Dec(tabsPayload.substring(0, 2))
+    val status: Int = Hex2Dec(payload.substring(0, 2))
     val statusBool: Boolean = (status == 0)
+    logger.debug(s"Status: $status")
 
-    val temp: Int = Hex2Dec(tabsPayload.substring(4, 6)) - 32
-    val tempLabelled: String = temp + "°C"
+    // Convert Fahrenheit to Celsius
+    val temp: Int = Hex2Dec(payload.substring(4, 6)) - 32
+    val tempLabelled: String = temp + " °C"
+    logger.debug(s"Temp: $temp")
 
-    val rh: Int = Hex2Dec(tabsPayload.substring(6,8))
+    val rh: Int = Hex2Dec(payload.substring(6,8))
     val rhLabelled: String = rh + "%"
 
-    val co2: Int = Hex2Dec(tabsPayload.substring(10,12) + tabsPayload.substring(8,10))
+    val co2: Int = Hex2Dec(payload.substring(10,12) + payload.substring(8,10))
     val co2Labelled: String = co2 + "ppm"
 
-    val voc: Int = Hex2Dec(tabsPayload.substring(14,16) + tabsPayload.substring(12,14))
+    val voc: Int = Hex2Dec(payload.substring(14,16) + payload.substring(12,14))
     val vocLabelled: String = voc + "ppb"
 
     //Device Operations Metadata
-    val battery: Double = (Hex2Dec(tabsPayload.substring(2, 3)) / 15.0)
-    val batteryInt: Int = Math.round(100 * (Hex2Dec(tabsPayload.substring(2, 3)) / 15.0)).toInt
-    val batteryVoltage: Double = (25 + Hex2Dec(tabsPayload.substring(3, 4)).toDouble) / 10
+    val battery: Double = (Hex2Dec(payload.substring(2, 3)) / 15.0)
+    val batteryInt: Int = Math.round(100 * (Hex2Dec(payload.substring(2, 3)) / 15.0)).toInt
+    val batteryVoltage: Double = (25 + Hex2Dec(payload.substring(3, 4)).toDouble) / 10
     val batteryLabelled: String = battery + "%"
     val batteryVoltageLabelled: String = batteryVoltage + "V"
+
+    /* Adding decoded information into the standard JSON structure */
 
     JsObject(
       "status" -> JsNumber(status),

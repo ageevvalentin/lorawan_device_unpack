@@ -1,9 +1,12 @@
 package io.tracknet.motion.TMBS100
 
+import com.typesafe.scalalogging.StrictLogging
 import io.tracknet.Common
 import spray.json._
 
-class Decoder extends org.loraalliance.Decoder with Common {
+// ~testOnly io.tracknet.motion.TMBS100.DecoderSpec
+
+class Decoder extends org.loraalliance.Decoder with Common with StrictLogging {
 
   def statusLabelled(status: Boolean): String =
     if (status) {
@@ -15,25 +18,33 @@ class Decoder extends org.loraalliance.Decoder with Common {
   override def execute(tabsPayload: String, format: PayloadFormat = PayloadFormat.HEX): JsObject = {
     // https://github.com/IPSO-Alliance/pub/tree/master/reg%20v1_1
 
+    val payload = if (format == PayloadFormat.BASE64) {
+      atoh(tabsPayload)
+    } else {
+      tabsPayload
+    }
+
+    /* Decoding below assumes that we have a hex formatted string in the payload */
+
     //Primary Measurements
-    val status: Int = Hex2Dec(tabsPayload.substring(0, 2))
+    val status: Int = Hex2Dec(payload.substring(0, 2))
     val statusBool: Boolean = (status == 0)
 
-    val temp: Int = Hex2Dec(tabsPayload.substring(4, 6)) - 32
+    val temp: Int = Hex2Dec(payload.substring(4, 6)) - 32
     val tempLabelled: String = temp + "°C"
 
     //Device Operations Metadata
-//    val batteryObjTup = batteryDecode(tabsPayload)
-    val battery: Double = (Hex2Dec(tabsPayload.substring(2, 3)) / 15.0)
-    val batteryInt: Int = Math.round(100 * (Hex2Dec(tabsPayload.substring(2, 3)) / 15.0)).toInt
-    val batteryVoltage: Double = (25 + Hex2Dec(tabsPayload.substring(3, 4)).toDouble) / 10
+//    val batteryObjTup = batteryDecode(payload)
+    val battery: Double = (Hex2Dec(payload.substring(2, 3)) / 15.0)
+    val batteryInt: Int = Math.round(100 * (Hex2Dec(payload.substring(2, 3)) / 15.0)).toInt
+    val batteryVoltage: Double = (25 + Hex2Dec(payload.substring(3, 4)).toDouble) / 10
     val batteryLabelled: String = batteryInt + "%"
     val batteryVoltageLabelled: String = batteryVoltage + "V"
 
-    val time: Int = Hex2Dec(tabsPayload.substring(8, 10) + tabsPayload.substring(6, 8))
+    val time: Int = Hex2Dec(payload.substring(8, 10) + payload.substring(6, 8))
     val timeLabelled: String = time + " minutes"
 
-    val count: Int = Hex2Dec(tabsPayload.substring(14, 16) + tabsPayload.substring(12, 14) + tabsPayload.substring(10, 12))
+    val count: Int = Hex2Dec(payload.substring(14, 16) + payload.substring(12, 14) + payload.substring(10, 12))
 
     JsObject(
       "status" -> JsNumber(status),
@@ -53,6 +64,7 @@ class Decoder extends org.loraalliance.Decoder with Common {
         ),
         "count" -> JsNumber(count)
       ),
+      "payload" -> JsString(payload),
       "ipso" -> JsObject(
         // Presence Sensor
         "3302" -> JsObject(
