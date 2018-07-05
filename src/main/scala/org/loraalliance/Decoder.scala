@@ -9,6 +9,7 @@ trait Decoder extends Helpers {
     val HEX: PayloadFormat = 1
     val BIN: PayloadFormat = 2
     val CUSTOM: PayloadFormat = 3
+    val BASE64: PayloadFormat = 4
   }
 
   def execute(tabsPayload: String, format: PayloadFormat = PayloadFormat.HEX): JsObject = ???

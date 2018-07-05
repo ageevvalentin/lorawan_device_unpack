@@ -7,6 +7,7 @@ import DefaultJsonProtocol._
 class Helpers {
 
   // Decoding a base64 encoded String
+  // data → hex string representation → base64
   def atob(base64String: String): String = {
     new String(Base64.decodeBase64(base64String))
   }
@@ -14,6 +15,15 @@ class Helpers {
   //Encoding a String to base64
   def btoa(string: String): String = {
     Base64.encodeBase64String(string.getBytes("utf-8"))
+  }
+
+  // Decoding a base64 encoded Hex String
+  // echo -n "AOs2Iv////8=" | base64 -D | hexdump -C
+  // data → base64
+  def atoh(base64String: String): String = {
+    Base64.decodeBase64(base64String).foldLeft[String](""){(str: String, b: Byte) => {
+      str + "%02x".format(b.toInt & 0xff)
+    }}
   }
 
   def Hex2Bin(hexadecimalString: String): String = {
@@ -93,7 +103,7 @@ class Helpers {
   }
 
   // Private Helpers
-  private def prependUpString(originalSring: String, finalLength: Int, paddingCharacter: Char): String ={
+  def prependUpString(originalSring: String, finalLength: Int, paddingCharacter: Char): String ={
     originalSring.reverse.padTo(finalLength, paddingCharacter).reverse.mkString
   }
 
