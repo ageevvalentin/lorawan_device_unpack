@@ -16,11 +16,13 @@ class Decoder extends org.loraalliance.Decoder with StrictLogging {
     val result = JsObject(
       "count" -> JsNumber(value),
       "payload" -> JsString(payload),
+      "device" -> JsObject(),
 
       "ipso" -> JsObject(
         // Counter Sensor
         "3300" -> JsObject(
-          "5534" -> JsNumber(value)
+          "5534" -> JsNumber(value),
+          "5750" -> JsString("count of persons since last transmit")
         )
       )
     )
